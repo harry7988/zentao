@@ -24,22 +24,41 @@ elif [ "$#" == "0" ]; then
     # upgrade zentao version
     echo "Backuping config / my.php / upload ..."
     cp /opt/zbox/app/zentao/config/my.php /opt/zbox/app/
-    mv /opt/zbox/app/zentao/www/data/upload /opt/zbox/app/
-    rm -rf /opt/zbox/app/zentao
 
-    echo "Upgrading..."
-    tar -zxf /tmp/zbox.tar.gz -C /tmp/
-    mv /tmp/zbox/app/zentao /opt/zbox/app/
-    mv /tmp/upgrade.php /opt/zbox/app/zentao/www/
-    chmod 664 /opt/zbox/app/zentao/www/upgrade.php
-    rm -rf /opt/zbox/tmp/apache/httpd.pid /tmp/*
+    cp -r /opt/zbox/app/zentao/www/data/upload /opt/zbox/app/
+    #创建资源目录、数据库备份
+    echo "开始备份资源目录、数据库文件"
+    time=$(date "+%Y-%m-%d_%H_%M_%S")
+    if [ ! -d "/opt/zbox/backUp/" ];then
+      mkdir -p /opt/zbox/backUp/
+    else
+      echo "备份文件夹已经存在，跳过创建"
+    fi
+    echo "开始备份禅道资源文件夹（/opt/zbox/app/zentao）"
+    tar -czPp -f /opt/zbox/backUp/zentao.$time.tar.gz /opt/zbox/app/zentao
+    echo "开始备份禅道开源版数据库(/opt/zbox/data)"
+    tar -czPp -f /opt/zbox/backUp/zentao.mysql.$time.tar.gz /opt/zbox/data
+    echo "$(pwd)"
+    #若升级文件存在则进入下面的步骤
+    if [ ! -f "/tmp/zbox.tar.gz" ];then
+      rm -rf /opt/zbox/app/zentao
 
-    echo "Restoring config / my.php / upload ..."
-    mv /opt/zbox/app/my.php /opt/zbox/app/zentao/config/my.php
-    rm -rf /opt/zbox/app/zentao/www/data/upload
-    mv /opt/zbox/app/upload /opt/zbox/app/zentao/www/data/
-    touch /opt/zbox/app/zentao/www/ok.txt
-    echo "Upgraded Zentao version to: ${ZENTAO_VER}\nPlease visit your Zentao website to complete the upgrade task."
+      echo "Upgrading..."
+      tar -zxf /tmp/zbox.tar.gz -C /tmp/
+      mv /tmp/zbox/app/zentao /opt/zbox/app/
+      mv /tmp/upgrade.php /opt/zbox/app/zentao/www/
+      chmod 664 /opt/zbox/app/zentao/www/upgrade.php
+      rm -rf /opt/zbox/tmp/apache/httpd.pid /tmp/*
+
+      echo "Restoring config / my.php / upload ..."
+      mv /opt/zbox/app/my.php /opt/zbox/app/zentao/config/my.php
+      rm -rf /opt/zbox/app/zentao/www/data/upload
+      mv /opt/zbox/app/upload /opt/zbox/app/zentao/www/data/
+      touch /opt/zbox/app/zentao/www/ok.txt
+      echo "Upgraded Zentao version to: ${ZENTAO_VER}\nPlease visit your Zentao website to complete the upgrade task."
+      else
+        echo "升级文件不存在：/tmp/zbox.tar.gz不存在"
+        fi
   fi
   
   # add apache http password for adminer
